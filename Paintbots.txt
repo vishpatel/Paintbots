@@ -1,0 +1,119 @@
+300 moves
+30 long-range scans
+
+
+Robots may turn 90 degrees left, 90 degrees right, move forward one square, move backward one square, or stay in the same spot.
+In addition, during any of these moves, the robot may fire a blob of paint, red or blue.
+The game lasts for 300 moves, and both robots move simultaneously. During each turn or move of the simulation, the robot may make a move, given by its control algorithm (the class you are writing).  If the robot moves out of a square, the square that it leaves is turned the robot’s color.  The goal of the game is to have more squares on the board painted your color than your robot opponent.  This is accomplished by moving around the board and painting the squares.  Thus, it is good to paint over squares colored your opponents color, as it adds a square that is your color and takes one away from your opponent.  There are of course some wrinkles.
+
+You may shoot a blob of paint, and if you hit your opponent’s robot, that robot will paint your color instead of its own when it moves.  This will last for 30 moves.
+You have only a limited number of paint blobs that you may shoot.  This number is 30.
+If you run into a wall, the game will end and your robot loses automatically.
+If you run into the other robot, the game will end immediately and the robot with the most squares painted their color at that point will win.
+The game board contains squares that have rocks in them.  Neither robot may enter these squares, and running into a square with rocks will terminate the game with a loss for the player that runs into the rock (just like running into a wall).
+You cannot fire through a rock.
+Each time your control algorithm decides on the next move it has access to its current surroundings in the form of a 5 by 5 square.  The robot you are controlling is at the center of the square and always points up for the direction it is facing.  This is called a short-range scan.
+Your control algorithm may also receive a limited number of long-range scans which gives the contents of the entire 15 by 15 board, almost.  (see below)  You receive a long-range scan by requesting it with your move on the previous simulation step.  You are limited to 30 long-range scans.
+The game board contains squares that have fog in them.  If the fog does not cover a rock, either robot may enter an area of fog and the squares under the fog may be painted just like any other non-rock square.  However, long-range scans do not show what is under the fog, only that there is fog at that location.  Short-range scans will always show what is beneath the fog.  Fog may drift, expand, or contract during the course of a simulation.
+The robot control must decide its next move at each step.  The interface for doing this is defined below.
+
+package paintbots;
+import java.awt.*;
+import javax.swing.ImageIcon;
+
+public abstract class PaintbotControl{
+  ImageIcon right_image = null;
+  /**
+   * This is the method that is called each time the simulation needs a move from your
+   * control algorithm.  You should construct and return a MoveRequest object as defined
+   * below.  The parameters that you receive give you your short and long-range scans.
+   *
+   * @param shortrangescan  A 5 by 5 array of BoardSqaure objects that tell you what is
+   *        around you
+   * @param longrangescan  A 15 by 15 array of BoardSqaure objects that tell you what the
+   *        board looks like
+   * @return You next move in the form of a MoveRequest object
+   */
+  public abstract MoveRequest getMove( BoardSquare[][] shortrangescan, BoardSquare[][]
+                                       longrangescan );
+
+  public abstract String getRobotName();
+  public abstract String getStudentLastName();
+  public abstract String getStudentID();
+  public abstract boolean tournamentEntry();
+  public abstract void reset( Color c );
+  public void setRight_image(ImageIcon right_image)
+  {
+    this.right_image = right_image;
+  }
+
+To return a move out of your getMove method, you construct a MoveRequest object with the following constructor.
+  /**
+   * This is the single specific constructor that create this object that is
+   * used to request a specific move for the next round in the simulation.  It
+   * requires 3 parameters:
+   *
+   * @param movetype Specifies the type of move to make in the next round of the
+   *  simulation.
+   *
+   * @param fire Requests that the paintbot fire a paintblob on the next round of the
+   *  simulation.
+   *
+   * @param longrangescanrequest Requests that a longrage scan be returned in the next
+   *  move request.
+   */
+  public MoveRequest( MoveType movetype, boolean firerequest, boolean longrangescanrequest )
+  {
+    this.movetype = movetype;
+    this.request_paint_fire = firerequest;
+    this.request_paint_fire = longrangescanrequest;
+  }
+
+The following constants define what the parameters mean for specific values.  You may use these constants that are in the MoveRequest object in order to specify your move.
+
+  /*
+   * These enum constants define the 5 possible movements that a paintbot may make.
+   */
+  public enum MoveType {
+    FORWARD,
+    BACKWARD,
+    ROTATE_LEFT,
+    ROTATE_RIGHT,
+    DO_NOTHING
+  };
+
+The following constants are also contained in the MoveRequest class.
+
+  /*
+   * These constants make it clear the boolean values required
+   * to fire or not fire a paint blob.
+   */
+  public final static boolean FIRE_PAINT = true;
+  public final static boolean DONOT_FIRE_PAINT = false;
+
+
+  /*
+   * These constants make it clear the boolean values required
+   * to request or not request a long-range scan on the next move.
+   */
+  public final static boolean REQUEST_LONGRANGE_SCAN = true;
+  public final static boolean NO_LONGRANGE_SCAN = false;
+
+For instance, to indicate that you want the next move to move forward one square while firing paint and not requesting a long-range scan, you would create an object like this:
+MoveRequest move = new MoveRequest(MoveType.FORWARD, MoveRequest.FIRE_PAINT, MoveRequest.NO_LONGRANGE_SCAN);
+and then return move from the method.
+You also get arrays of type BoardSquare for the long-range and short-range scans.  Each BoardSquare object represents a single square of the playing area.  The following methods in BoardSquare are available in order to query the contents of a square.
+·	SquareType getSquareType()
+	getSquareType returns an instance of type SquareType that defines the type of square.  The enumerated 	type SquareType is defined by
+	public enum SquareType {
+	  NORMAL, ROCK, FOG, WALL, FOGROCK
+	};
+·	Color getSquareColor()
+	getSquareColor returns the color the square is painted.  The possible return values are Color.RED, 	Color.BLUE, Color.WHITE.  Note that if the square is a FOG square and part of a long-range scan, the 	square will be Color.WHITE, even if it is painted red or blue.
+·	boolean redRobotPresent()  returns true if the red robot is in the square.
+·	boolean blueRobotPresent() returns true if the blue robot is in the square.
+·	int robotDirection() returns the direction of the robot if one is present.  Its value is not valid if called when no robot is in the square.  Possible directions are:
+	0 – up
+	1 – right
+	2 – down
+	3 – left
